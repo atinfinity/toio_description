@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<robot name="toio" xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- center -->
+  <link name="center">
+      <visual>
+      <origin xyz="0 0 0" rpy="3.14159 0 0"/>
+      <geometry>
+        <mesh filename="package://toio_description/meshes/toio/toiocorecube_v001.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="body">
+        <color rgba="1.0 1.0 1.0 1.0" />
+      </material>
+    </visual>
+  </link>
+  <joint name="base_link_joint" type="fixed">
+    <parent link="center" />
+    <child link="base_link" />
+    <origin xyz="0.0038 0 0.00625" rpy="0 0 0"/>
+  </joint>
+
+  <!-- base_link -->
+  <link name="base_link" />
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="base_footprint" />
+    <origin xyz="0 0 -0.00625" rpy="0 0 0"/>
+  </joint>
+
+  <!-- base_footprint -->
+  <link name="base_footprint" />
+
+</robot>
