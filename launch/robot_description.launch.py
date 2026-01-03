@@ -55,6 +55,23 @@ def generate_launch_description():
         ],
     )
 
+    joint_state_publisher_node = Node(
+        package="joint_state_publisher",
+        executable="joint_state_publisher",
+        name="joint_state_publisher",
+        namespace=namespace,
+        output="screen",
+        parameters=[
+            {
+            }
+        ],
+    )
+
     return LaunchDescription(
-        [namespace_arg, frame_prefix_arg, robot_state_publisher_node]
+        [
+            namespace_arg,
+            frame_prefix_arg,
+            robot_state_publisher_node,
+            joint_state_publisher_node
+        ]
     )
