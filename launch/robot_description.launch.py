@@ -14,7 +14,7 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     namespace_arg = DeclareLaunchArgument(
         "namespace",
-        default_value="toio",
+        default_value="",
         description="Namespace for the robot state publisher",
     )
 
