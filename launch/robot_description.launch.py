@@ -20,7 +20,7 @@ def generate_launch_description():
 
     frame_prefix_arg = DeclareLaunchArgument(
         "frame_prefix",
-        default_value="/",
+        default_value="",
         description="Frame prefix for the robot state publisher",
     )
 
