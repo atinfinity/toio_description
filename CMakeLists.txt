@@ -24,7 +24,14 @@ install(
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+  # ament_copyright also requires CONTRIBUTING.md and a LICENSE file in a
+  # layout it recognizes; skip it (the copyright test is skipped in
+  # toio_ros2 as well)
+  set(ament_cmake_copyright_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_urdf test/test_urdf.py)
 endif()
 
 ament_auto_package()
