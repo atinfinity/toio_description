@@ -1,4 +1,17 @@
-#!/usr/bin/env python3
+# Copyright (C) 2026 atinfinity
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import (
@@ -13,54 +26,54 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     namespace_arg = DeclareLaunchArgument(
-        "namespace",
-        default_value="",
-        description="Namespace for the robot state publisher",
+        'namespace',
+        default_value='',
+        description='Namespace for the robot state publisher',
     )
 
     frame_prefix_arg = DeclareLaunchArgument(
-        "frame_prefix",
-        default_value="",
-        description="Frame prefix for the robot state publisher",
+        'frame_prefix',
+        default_value='',
+        description='Frame prefix for the robot state publisher',
     )
 
-    namespace = LaunchConfiguration("namespace")
-    frame_prefix = LaunchConfiguration("frame_prefix")
+    namespace = LaunchConfiguration('namespace')
+    frame_prefix = LaunchConfiguration('frame_prefix')
 
     robot_description_content = Command(
         [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
+            PathJoinSubstitution([FindExecutable(name='xacro')]),
+            ' ',
             PathJoinSubstitution(
                 [
-                    FindPackageShare("toio_description"),
-                    "robot",
-                    "toio.urdf.xacro",
+                    FindPackageShare('toio_description'),
+                    'robot',
+                    'toio.urdf.xacro',
                 ]
             ),
         ]
     )
 
     robot_state_publisher_node = Node(
-        package="robot_state_publisher",
-        executable="robot_state_publisher",
-        name="robot_state_publisher",
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        name='robot_state_publisher',
         namespace=namespace,
-        output="screen",
+        output='screen',
         parameters=[
             {
-                "robot_description": robot_description_content,
-                "frame_prefix": frame_prefix,
+                'robot_description': robot_description_content,
+                'frame_prefix': frame_prefix,
             }
         ],
     )
 
     joint_state_publisher_node = Node(
-        package="joint_state_publisher",
-        executable="joint_state_publisher",
-        name="joint_state_publisher",
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        name='joint_state_publisher',
         namespace=namespace,
-        output="screen",
+        output='screen',
         parameters=[
             {
             }
