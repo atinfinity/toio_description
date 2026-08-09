@@ -38,10 +38,16 @@ ros2 launch toio_description robot_description.launch.py
 | `robot_name` | `toio` | Gazebo model name used to scope the gz topics (`/model/<robot_name>/...`), so that several cubes can be spawned without sharing topics |
 | `led_duration_ms` | `0` | Lighting time of the indicator LED in milliseconds. `0` keeps it lit until the next command, `10`-`2550` turns it off once the time has elapsed |
 
-## Indicator LED
+## Indicator lamp
 
-`led_link` models the indicator on the front of the cube. It is driven in Gazebo
-by the `ToioLedSystem` plugin of
+`led_link` models the lamp of the cube. Following
+[the specification](https://toio.github.io/toio-spec/en/docs/ble_light/), which
+gives the cube one lamp on its bottom, it is the ball at the rear of the
+underside that also serves as the function button, 11.1 mm behind the center of
+the cube. Only the cap that reaches below the flat underside is visible, so the
+lamp is best seen from a low angle, as on the real cube.
+
+It is driven in Gazebo by the `ToioLedSystem` plugin of
 [toio_gazebo](https://github.com/atinfinity/toio_gazebo), which subscribes to
 `/model/<robot_name>/led`. See the toio_gazebo README for how that is bridged to
 the `toio/led` topic of the real cube.

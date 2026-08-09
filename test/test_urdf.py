@@ -45,6 +45,12 @@ EXPECTED_JOINTS = {
 WHEEL_SEPARATION = 0.0266
 WHEEL_RADIUS = 0.00625
 
+# The lamp is the ball on the bottom of the cube, which the bottom view puts
+# 11.1 mm behind the centre, on the centre line.
+# https://toio.github.io/toio-spec/en/docs/hardware_components
+LAMP_OFFSET_X = -0.0111
+LAMP_RADIUS = 0.0035
+
 
 @pytest.fixture(scope='module')
 def robot():
@@ -173,11 +179,18 @@ def test_led_marker_matches_only_the_led_visual(robot, plugins):
     assert [name for name in unnamed_visual_links if marker in name] == []
 
 
-def test_led_visual_sits_on_the_front_of_the_cube(robot):
+def test_led_is_the_ball_on_the_bottom_of_the_cube(robot):
     origin = robot.find("joint[@name='led_joint']/origin")
     x, y, z = (float(value) for value in origin.get('xyz').split())
-    # The body spans +-0.0159 in x and 0.0 to 0.02425 in z in the frame of
-    # "center", and the cube drives towards +x.
-    assert x == pytest.approx(0.0159, abs=0.002)
+    assert x == pytest.approx(LAMP_OFFSET_X, abs=0.0005)
     assert y == pytest.approx(0.0)
-    assert 0.0 < z < 0.02425
+
+    sphere = robot.find("link[@name='led_link']/visual/geometry/sphere")
+    assert sphere is not None, 'the lamp of the real cube is a ball'
+    radius = float(sphere.get('radius'))
+    assert radius == pytest.approx(LAMP_RADIUS, abs=0.0005)
+
+    # The ball reaches the ground, which is z = 0 in the frame of "center",
+    # so that the cap below the flat underside of the body is visible.
+    assert z - radius <= 0.0
+    assert z > 0.0

@@ -54,25 +54,34 @@
     </inertial>
   </link>
 
-  <!-- Indicator LED.
-       The cube body spans x/y of +-0.0159 and z of 0 to 0.02425 in the frame
-       of "center", so this sits on the lower part of the front face, where the
-       indicator of the real cube is. The visual is named "led" because the
-       ToioLedSystem plugin looks the entity up by that substring. The fixed
-       joint below is lumped into "center" when the URDF is converted to SDF,
-       which rewrites the visual name into a longer generated one. -->
+  <!-- Indicator lamp.
+       https://toio.github.io/toio-spec/docs/ble_light/ gives the cube one lamp
+       on its bottom, and the parts diagram of
+       https://toio.github.io/toio-spec/docs/hardware_components/ shows it as
+       the ball at the rear that doubles as the function button. Fitting a
+       sphere to that ball in the mesh gives a radius of 3.49 mm around
+       (-11.1, 0, 3.28) mm in the frame of "center", which agrees with the
+       11.1 mm of the bottom view drawing. The flat part of the underside is at
+       z = 1.66 mm, so only the cap below that shows, as on the real cube.
+       The ball in the mesh is not perfectly round, reaching 3.62 mm from that
+       centre, so the sphere here is 3.7 mm to cover it everywhere it shows
+       instead of letting the mesh poke through it.
+       The visual is named "led" because the ToioLedSystem plugin looks the
+       entity up by that substring. The fixed joint below is lumped into
+       "center" when the URDF is converted to SDF, which rewrites the visual
+       name into a longer generated one. -->
   <joint name="led_joint" type="fixed">
     <parent link="center"/>
     <child link="led_link"/>
-    <origin xyz="0.0160 0 0.005" rpy="0 0 0"/>
+    <origin xyz="-0.0111 0 0.0033" rpy="0 0 0"/>
   </joint>
   <link name="led_link">
     <visual name="led">
       <geometry>
-        <box size="0.0018 0.010 0.004"/>
+        <sphere radius="0.0037"/>
       </geometry>
       <material name="led_off">
-        <color rgba="0.15 0.15 0.15 1.0"/>
+        <color rgba="0.8 0.8 0.8 1.0"/>
       </material>
     </visual>
     <inertial>
