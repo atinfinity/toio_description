@@ -168,12 +168,11 @@ def test_led_light_is_driven_by_the_plugin(robot, plugins):
     assert float(
         plugins['toio_gazebo::ToioLedSystem'].find('led_light_intensity').text) > 0.0
 
-    # It is raised above the ball, because a light down at the mat washes it
-    # unevenly, and it reaches several times the cube so that the glow spreads
-    # over the mat rather than sitting right under the lamp.
+    # Just above the mat, reaching about as far as the cube is wide, which is
+    # how far the glow of the real lamp carries.
     _, _, z = (float(value) for value in light.find('pose').text.split()[:3])
-    assert z > 0.0
-    assert 0.05 < float(light.find('attenuation/range').text) < 0.2
+    assert z > -LAMP_RADIUS
+    assert 0.02 < float(light.find('attenuation/range').text) < 0.05
 
 
 def test_led_marker_matches_only_the_led_visual(robot, plugins):
