@@ -28,6 +28,7 @@ EXPECTED_LINKS = {
     'base_r_drive_wheel_link',
     'base_l_drive_wheel_link',
     'rear_caster_link',
+    'led_link',
 }
 
 EXPECTED_JOINTS = {
@@ -36,12 +37,19 @@ EXPECTED_JOINTS = {
     'base_r_drive_wheel_joint': ('continuous', 'base_link', 'base_r_drive_wheel_link'),
     'base_l_drive_wheel_joint': ('continuous', 'base_link', 'base_l_drive_wheel_link'),
     'rear_caster_joint': ('fixed', 'base_footprint', 'rear_caster_link'),
+    'led_joint': ('fixed', 'center', 'led_link'),
 }
 
 # hardware constants shared with the toio_ros2 node
 # https://toio.github.io/toio-spec/en/docs/hardware_shape
 WHEEL_SEPARATION = 0.0266
 WHEEL_RADIUS = 0.00625
+
+# The lamp is the ball on the bottom of the cube, which the bottom view puts
+# 11.1 mm behind the centre, on the centre line.
+# https://toio.github.io/toio-spec/en/docs/hardware_components
+LAMP_OFFSET_X = -0.0111
+LAMP_RADIUS = 0.0035
 
 
 @pytest.fixture(scope='module')
@@ -121,14 +129,88 @@ def test_mesh_reference_resolves(robot):
     assert (PACKAGE_DIR / filename[len(prefix):]).is_file()
 
 
-def test_diff_drive_plugin_matches_hardware_spec(robot):
-    plugins = {
+@pytest.fixture(scope='module')
+def plugins(robot):
+    return {
         plugin.get('name'): plugin
         for gazebo in robot.findall('gazebo')
         for plugin in gazebo.findall('plugin')
     }
+
+
+def test_diff_drive_plugin_matches_hardware_spec(plugins):
     diff_drive = plugins['gz::sim::systems::DiffDrive']
     assert diff_drive.find('left_joint').text == 'base_l_drive_wheel_joint'
     assert diff_drive.find('right_joint').text == 'base_r_drive_wheel_joint'
     assert float(diff_drive.find('wheel_separation').text) == pytest.approx(WHEEL_SEPARATION)
     assert float(diff_drive.find('wheel_radius').text) == pytest.approx(WHEEL_RADIUS)
+
+
+def test_led_plugin_is_scoped_to_the_model(plugins):
+    led = plugins['toio_gazebo::ToioLedSystem']
+    assert led.get('filename') == 'ToioLedSystem'
+    # Same scoping as DiffDrive, so that spawning several cubes does not make
+    # them share a topic.
+    assert led.find('topic').text == '/model/toio/led'
+    assert led.find('led_duration_ms').text == '0'
+
+
+def test_led_light_is_driven_by_the_plugin(robot, plugins):
+    light = robot.find("gazebo[@reference='led_link']/light")
+    assert light is not None, 'the lamp needs a light to color the mat'
+    # A point light, because Gazebo does not render spot lights that belong to
+    # a model.
+    assert light.get('type') == 'point'
+    # It starts off, and the plugin drives it together with the visual.
+    assert float(light.find('intensity').text) == 0.0
+    assert plugins['toio_gazebo::ToioLedSystem'].find('led_light').text == \
+        light.get('name')
+    assert float(
+        plugins['toio_gazebo::ToioLedSystem'].find('led_light_intensity').text) > 0.0
+
+    # Just above the mat, reaching about as far as the cube is wide, which is
+    # how far the glow of the real lamp carries.
+    _, _, z = (float(value) for value in light.find('pose').text.split()[:3])
+    assert z > -LAMP_RADIUS
+    assert 0.02 < float(light.find('attenuation/range').text) < 0.05
+
+
+def test_led_marker_matches_only_the_led_visual(robot, plugins):
+    # The LED joint is fixed, so the SDF conversion lumps it into "center" and
+    # rewrites the visual name. The plugin therefore matches the visual by
+    # substring, which only works while nothing else in the model matches.
+    marker = plugins['toio_gazebo::ToioLedSystem'].find('led_visual').text
+
+    named_visuals = [
+        visual.get('name')
+        for link in robot.findall('link')
+        for visual in link.findall('visual')
+        if visual.get('name') is not None
+    ]
+    assert [name for name in named_visuals if marker in name] == [marker]
+
+    # Visuals without a name are named after their link during the conversion.
+    unnamed_visual_links = [
+        link.get('name')
+        for link in robot.findall('link')
+        for visual in link.findall('visual')
+        if visual.get('name') is None
+    ]
+    assert [name for name in unnamed_visual_links if marker in name] == []
+
+
+def test_led_is_the_ball_on_the_bottom_of_the_cube(robot):
+    origin = robot.find("joint[@name='led_joint']/origin")
+    x, y, z = (float(value) for value in origin.get('xyz').split())
+    assert x == pytest.approx(LAMP_OFFSET_X, abs=0.0005)
+    assert y == pytest.approx(0.0)
+
+    sphere = robot.find("link[@name='led_link']/visual/geometry/sphere")
+    assert sphere is not None, 'the lamp of the real cube is a ball'
+    radius = float(sphere.get('radius'))
+    assert radius == pytest.approx(LAMP_RADIUS, abs=0.0005)
+
+    # The ball reaches the ground, which is z = 0 in the frame of "center",
+    # so that the cap below the flat underside of the body is visible.
+    assert z - radius <= 0.0
+    assert z > 0.0

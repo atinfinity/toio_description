@@ -4,6 +4,15 @@
        so that multiple instances can be spawned without sharing topics -->
   <xacro:arg name="robot_name" default="toio"/>
 
+  <!-- Lighting time of the indicator LED in milliseconds. 0 keeps the LED lit
+       until the next command, 10-2550 lets the cube turn it off on its own.
+       This mirrors the led_duration_ms parameter of the toio_ros2 node. -->
+  <xacro:arg name="led_duration_ms" default="0"/>
+
+  <!-- Intensity of the light of the lamp while it is lit. 0 leaves the lamp
+       lighting up only itself, without casting color on the mat. -->
+  <xacro:arg name="led_light_intensity" default="1.0"/>
+
   <!-- Inertial -->
   <xacro:macro name="inertial_box" params="mass height width depth">
     <mass value="${mass}"/>
@@ -48,6 +57,71 @@
       <xacro:inertial_box mass="0.2" height="0.0256" width="0.0318" depth="0.0318"/>
     </inertial>
   </link>
+
+  <!-- Indicator lamp.
+       https://toio.github.io/toio-spec/docs/ble_light/ gives the cube one lamp
+       on its bottom, and the parts diagram of
+       https://toio.github.io/toio-spec/docs/hardware_components/ shows it as
+       the ball at the rear that doubles as the function button. Fitting a
+       sphere to that ball in the mesh gives a radius of 3.49 mm around
+       (-11.1, 0, 3.28) mm in the frame of "center", which agrees with the
+       11.1 mm of the bottom view drawing. The flat part of the underside is at
+       z = 1.66 mm, so only the cap below that shows, as on the real cube.
+       The ball in the mesh is not perfectly round, reaching 3.62 mm from that
+       centre, so the sphere here is 3.7 mm to cover it everywhere it shows
+       instead of letting the mesh poke through it.
+       The visual is named "led" because the ToioLedSystem plugin looks the
+       entity up by that substring. The fixed joint below is lumped into
+       "center" when the URDF is converted to SDF, which rewrites the visual
+       name into a longer generated one. -->
+  <joint name="led_joint" type="fixed">
+    <parent link="center"/>
+    <child link="led_link"/>
+    <origin xyz="-0.0111 0 0.0033" rpy="0 0 0"/>
+  </joint>
+  <link name="led_link">
+    <visual name="led">
+      <geometry>
+        <sphere radius="0.0037"/>
+      </geometry>
+      <material name="led_off">
+        <color rgba="0.8 0.8 0.8 1.0"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-9" ixy="0" ixz="0" iyy="1e-9" iyz="0" izz="1e-9"/>
+    </inertial>
+  </link>
+
+  <!-- A light for the lamp, so that it also casts its color on the mat instead
+       of only lighting up itself. It starts switched off, and ToioLedSystem
+       drives its color and intensity together with the visual.
+       On the real cube the mat right under the lamp picks up a strong spot
+       about the size of the lamp itself, which then fades out over roughly the
+       size of the cube. The light therefore sits just above the mat with a
+       steep falloff and a reach of 30 mm, against the 31.8 mm of the body.
+       Shadows are off. The body would otherwise block all of it, and Gazebo
+       does not shade a model from its own light at this scale anyway, so a
+       light that reaches further also falls on the cube and on anything
+       standing within the same distance. Keeping the reach close to the cube
+       is what keeps it off the mounts on the top; led_light_intensity turns
+       the whole thing down or off. -->
+  <gazebo reference="led_link">
+    <light name="led_light" type="point">
+      <pose>0 0 0.0007 0 0 0</pose>
+      <diffuse>0 0 0 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <attenuation>
+        <range>0.03</range>
+        <constant>0.4</constant>
+        <linear>0.0</linear>
+        <quadratic>1500.0</quadratic>
+      </attenuation>
+      <cast_shadows>false</cast_shadows>
+      <intensity>0</intensity>
+    </light>
+  </gazebo>
 
   <joint name="base_footprint_joint" type="fixed">
     <parent link="center" />
@@ -185,6 +259,16 @@
         <use_pose_vector_msg>true</use_pose_vector_msg>
         <publish_visual_pose>false</publish_visual_pose>
         <update_frequency>50</update_frequency>
+      </plugin>
+
+      <plugin
+        filename="ToioLedSystem"
+        name="toio_gazebo::ToioLedSystem">
+        <topic>/model/$(arg robot_name)/led</topic>
+        <led_visual>led</led_visual>
+        <led_light>led_light</led_light>
+        <led_light_intensity>$(arg led_light_intensity)</led_light_intensity>
+        <led_duration_ms>$(arg led_duration_ms)</led_duration_ms>
       </plugin>
   </gazebo>
 
