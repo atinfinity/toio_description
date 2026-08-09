@@ -102,14 +102,19 @@
        times the cube rather than a bright spot right under it, and the light
        is raised into the body so that it washes the mat evenly on every side
        instead of grazing it from the ball.
-       Shadows are off. The body would otherwise block all of it, and shadow
-       maps do not hold up at the scale of the gap under the cube. A point
-       light that reaches across the mat also reaches anything standing within
-       the same distance, so keep walls further away than the range if that
-       matters, or turn the light down with led_light_intensity. -->
+       Shadows are off. The body would otherwise block all of it, and Gazebo
+       does not shade a model from its own light at this scale anyway. The
+       light therefore also falls on the parts of the cube that stand ahead of
+       it, so it sits under the middle of the body rather than under the ball:
+       from there the mounts on the top are nearly straight above it and catch
+       almost none of it. A light that reaches across the mat also reaches
+       anything standing within the same distance, so keep walls further away
+       than the range if that matters, or turn the light down with
+       led_light_intensity.
+    -->
   <gazebo reference="led_link">
     <light name="led_light" type="point">
-      <pose>0 0 0.0067 0 0 0</pose>
+      <pose>0.0111 0 0.0067 0 0 0</pose>
       <diffuse>0 0 0 1</diffuse>
       <specular>0 0 0 1</specular>
       <attenuation>
