@@ -31,6 +31,21 @@ source ~/dev_ws/install/setup.bash
 ros2 launch toio_description robot_description.launch.py
 ```
 
+## Xacro arguments
+
+| argument | default | description |
+| --- | --- | --- |
+| `robot_name` | `toio` | Gazebo model name used to scope the gz topics (`/model/<robot_name>/...`), so that several cubes can be spawned without sharing topics |
+| `led_duration_ms` | `0` | Lighting time of the indicator LED in milliseconds. `0` keeps it lit until the next command, `10`-`2550` turns it off once the time has elapsed |
+
+## Indicator LED
+
+`led_link` models the indicator on the front of the cube. It is driven in Gazebo
+by the `ToioLedSystem` plugin of
+[toio_gazebo](https://github.com/atinfinity/toio_gazebo), which subscribes to
+`/model/<robot_name>/led`. See the toio_gazebo README for how that is bridged to
+the `toio/led` topic of the real cube.
+
 ## License
 
 ### Source code

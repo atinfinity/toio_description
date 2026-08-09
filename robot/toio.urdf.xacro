@@ -4,6 +4,11 @@
        so that multiple instances can be spawned without sharing topics -->
   <xacro:arg name="robot_name" default="toio"/>
 
+  <!-- Lighting time of the indicator LED in milliseconds. 0 keeps the LED lit
+       until the next command, 10-2550 lets the cube turn it off on its own.
+       This mirrors the led_duration_ms parameter of the toio_ros2 node. -->
+  <xacro:arg name="led_duration_ms" default="0"/>
+
   <!-- Inertial -->
   <xacro:macro name="inertial_box" params="mass height width depth">
     <mass value="${mass}"/>
@@ -46,6 +51,33 @@
     <inertial>
       <origin xyz="0 0 0.0125"/>
       <xacro:inertial_box mass="0.2" height="0.0256" width="0.0318" depth="0.0318"/>
+    </inertial>
+  </link>
+
+  <!-- Indicator LED.
+       The cube body spans x/y of +-0.0159 and z of 0 to 0.02425 in the frame
+       of "center", so this sits on the lower part of the front face, where the
+       indicator of the real cube is. The visual is named "led" because the
+       ToioLedSystem plugin looks the entity up by that substring. The fixed
+       joint below is lumped into "center" when the URDF is converted to SDF,
+       which rewrites the visual name into a longer generated one. -->
+  <joint name="led_joint" type="fixed">
+    <parent link="center"/>
+    <child link="led_link"/>
+    <origin xyz="0.0160 0 0.005" rpy="0 0 0"/>
+  </joint>
+  <link name="led_link">
+    <visual name="led">
+      <geometry>
+        <box size="0.0018 0.010 0.004"/>
+      </geometry>
+      <material name="led_off">
+        <color rgba="0.15 0.15 0.15 1.0"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-9" ixy="0" ixz="0" iyy="1e-9" iyz="0" izz="1e-9"/>
     </inertial>
   </link>
 
@@ -185,6 +217,14 @@
         <use_pose_vector_msg>true</use_pose_vector_msg>
         <publish_visual_pose>false</publish_visual_pose>
         <update_frequency>50</update_frequency>
+      </plugin>
+
+      <plugin
+        filename="ToioLedSystem"
+        name="toio_gazebo::ToioLedSystem">
+        <topic>/model/$(arg robot_name)/led</topic>
+        <led_visual>led</led_visual>
+        <led_duration_ms>$(arg led_duration_ms)</led_duration_ms>
       </plugin>
   </gazebo>
 
