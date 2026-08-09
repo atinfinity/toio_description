@@ -155,6 +155,27 @@ def test_led_plugin_is_scoped_to_the_model(plugins):
     assert led.find('led_duration_ms').text == '0'
 
 
+def test_led_light_is_driven_by_the_plugin(robot, plugins):
+    light = robot.find("gazebo[@reference='led_link']/light")
+    assert light is not None, 'the lamp needs a light to color the mat'
+    # A point light, because Gazebo does not render spot lights that belong to
+    # a model.
+    assert light.get('type') == 'point'
+    # It starts off, and the plugin drives it together with the visual.
+    assert float(light.find('intensity').text) == 0.0
+    assert plugins['toio_gazebo::ToioLedSystem'].find('led_light').text == \
+        light.get('name')
+    assert float(
+        plugins['toio_gazebo::ToioLedSystem'].find('led_light_intensity').text) > 0.0
+
+    # It is raised above the ball, because a light down at the mat washes it
+    # unevenly, and it reaches several times the cube so that the glow spreads
+    # over the mat rather than sitting right under the lamp.
+    _, _, z = (float(value) for value in light.find('pose').text.split()[:3])
+    assert z > 0.0
+    assert 0.05 < float(light.find('attenuation/range').text) < 0.2
+
+
 def test_led_marker_matches_only_the_led_visual(robot, plugins):
     # The LED joint is fixed, so the SDF conversion lumps it into "center" and
     # rewrites the visual name. The plugin therefore matches the visual by
