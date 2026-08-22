@@ -13,6 +13,18 @@
        lighting up only itself, without casting color on the mat. -->
   <xacro:arg name="led_light_intensity" default="1.0"/>
 
+  <!-- Prefix of the TF frames (e.g. "toio1/") for multi-cube setups. The
+       DiffDrive odometry and the IMU sensor emit frame ids as plain strings,
+       so the prefix has to be baked into the model here (robot_state_publisher
+       cannot rewrite them the way it does the URDF link frames). -->
+  <xacro:arg name="frame_prefix" default=""/>
+
+  <!-- Notification interval of the posture angle behind /toio/imu, in
+       milliseconds. Mirrors the imu_interval_ms parameter of toio_ros2; the
+       IMU sensor update rate below is 1000/imu_interval_ms Hz. -->
+  <xacro:arg name="imu_interval_ms" default="100"/>
+  <xacro:property name="imu_interval_ms" value="$(arg imu_interval_ms)"/>
+
   <!-- Inertial -->
   <xacro:macro name="inertial_box" params="mass height width depth">
     <mass value="${mass}"/>
@@ -236,11 +248,16 @@
         <max_angular_velocity>26.17994</max_angular_velocity>
         <min_angular_velocity>-26.17994</min_angular_velocity>
         <topic>/model/$(arg robot_name)/cmd_vel</topic>
-        <odom_topic>/odom_dummy</odom_topic>
+        <!-- Wheel odometry, mirroring toio_ros2's /odom (odom -> center) at
+             20Hz. Only the odometry message is published here; the tf tree is
+             provided by the launch (map -> odom -> center, with map -> center
+             kept at the mat-perfect ground-truth pose), so tf_topic stays a
+             dummy that nothing subscribes to. -->
+        <odom_topic>/model/$(arg robot_name)/odom</odom_topic>
         <tf_topic>tf_dummy</tf_topic>
-        <frame_id>odom_dummy</frame_id>
-        <child_frame_id>base_footprint</child_frame_id>
-        <odom_publish_frequency>10</odom_publish_frequency>
+        <frame_id>$(arg frame_prefix)odom</frame_id>
+        <child_frame_id>$(arg frame_prefix)center</child_frame_id>
+        <odom_publish_frequency>20</odom_publish_frequency>
       </plugin>
 
       <plugin
@@ -270,6 +287,21 @@
         <led_light_intensity>$(arg led_light_intensity)</led_light_intensity>
         <led_duration_ms>$(arg led_duration_ms)</led_duration_ms>
       </plugin>
+  </gazebo>
+
+  <!-- IMU behind /toio/imu (mirrors toio_ros2 #51). Attached to the cube body
+       frame "center". Gazebo fills orientation, angular velocity and linear
+       acceleration; the real cube only reports orientation, but the sim value
+       is bridged as-is (see toio_gazebo README). The update rate follows
+       imu_interval_ms (1000/imu_interval_ms Hz, default 10Hz). Needs the
+       gz-sim-imu-system in the world. -->
+  <gazebo reference="center">
+    <sensor name="imu" type="imu">
+      <topic>/model/$(arg robot_name)/imu</topic>
+      <gz_frame_id>$(arg frame_prefix)center</gz_frame_id>
+      <update_rate>${1000.0 / imu_interval_ms}</update_rate>
+      <always_on>1</always_on>
+    </sensor>
   </gazebo>
 
   <joint name="rear_caster_joint" type="fixed">
